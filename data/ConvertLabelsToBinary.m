@@ -1,7 +1,7 @@
 clear
 folder = pwd;
 % add label folder name
-labels = strcat(folder,'\STOPLabels');
+labels = strcat(folder,'/ADVANTAGE_OF_PASSING_binarylabels');
 
 cd(labels)
 colorLabels = dir;

@@ -3,23 +3,27 @@ import numpy as np
 import os
 import glob
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 
 
 SEED = 2**10
 #np.random.seed(SEED)
 
 
+def load_img(img_path, target_size, color_mode):
+    obj = tf.keras.preprocessing.image.load_img(img_path, target_size=target_size, color_mode=color_mode)
+    arr = tf.keras.preprocessing.image.img_to_array(obj, data_format='channels_last', dtype='float32')
+    return arr
+
 def load_data(images_path, labels_path, img_height, img_width):
     all_images = [x for x in sorted(os.listdir(images_path)) if x[-4:] == '.png']
 
     x = np.empty(shape=(len(all_images), img_height, img_width, 3), dtype='float32')
     for i, name in enumerate(all_images):
-        x[i] = mpimg.imread(images_path + name)
+        x[i] = load_img(images_path + name, (img_height, img_width), 'rgb')
 
     y = np.empty(shape=(len(all_images), img_height, img_width, 1), dtype='float32')
     for i, name in enumerate(all_images):
-        y[i] = mpimg.imread(labels_path + name).reshape((img_width, img_height, 1))
+        y[i] = load_img(labels_path + name, (img_height, img_width), 'grayscale')
 
     return x, y
 
@@ -39,10 +43,10 @@ def training_generator(images_path, labels_path, img_height, img_width, x=None, 
         # Allowed percentage of data for validation
         validation_split=0.2,
 
-        # Make sure the values are floats within [0,1] in channels_last order
-        data_format='channels_last',
+        # Make sure the values are floats in channels_last order within [0,1]
         dtype='float32',
         rescale=1./255,
+        data_format='channels_last',
     )
 
     image_datagen = tf.keras.preprocessing.image.ImageDataGenerator(**datagen_args)
@@ -74,6 +78,7 @@ if __name__ == '__main__':
     for x, y in training_generator(images_path=images_path, labels_path=labels_path, img_height=img_height, img_width=img_width, x=x, y=y, batch_size=batch_size):
         fig, axis = plt.subplots(nrows=batch_size, ncols=2, squeeze=False, subplot_kw={'xticks': [], 'yticks': []})
         for i in range(batch_size):
+            x = (x - np.min(x))/np.ptp(x)
             axis[i,0].imshow(x[i,:,:,:])
             axis[i,1].imshow(y[i,:,:,0])
         input('Press [Enter] to visualize another augmentated mini-batch...')

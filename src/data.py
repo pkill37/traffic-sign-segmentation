@@ -14,15 +14,15 @@ def load_img(img_path, target_size, color_mode):
     arr = tf.keras.preprocessing.image.img_to_array(obj, data_format='channels_last', dtype='float32')
     return arr
 
+
 def load_data(images_path, labels_path, img_height, img_width):
     all_images = [x for x in sorted(os.listdir(images_path)) if x[-4:] == '.png']
-
     x = np.empty(shape=(len(all_images), img_height, img_width, 3), dtype='float32')
-    for i, name in enumerate(all_images):
-        x[i] = load_img(images_path + name, (img_height, img_width), 'rgb')
-
     y = np.empty(shape=(len(all_images), img_height, img_width, 1), dtype='float32')
+
     for i, name in enumerate(all_images):
+        assert os.path.isfile(images_path+name) == os.path.isfile(labels_path+name)
+        x[i] = load_img(images_path + name, (img_height, img_width), 'rgb')
         y[i] = load_img(labels_path + name, (img_height, img_width), 'grayscale')
 
     return x, y

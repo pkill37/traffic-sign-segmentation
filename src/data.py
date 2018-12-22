@@ -33,8 +33,6 @@ def training_generator(images_path, labels_path, img_height, img_width, x=None, 
 
     datagen_args = dict(
         # Allowed transformations
-        featurewise_center=do_featurewise_normalization,
-        featurewise_std_normalization=do_featurewise_normalization,
         rotation_range=90,
         width_shift_range=0.1,
         height_shift_range=0.1,
@@ -49,7 +47,7 @@ def training_generator(images_path, labels_path, img_height, img_width, x=None, 
         data_format='channels_last',
     )
 
-    image_datagen = tf.keras.preprocessing.image.ImageDataGenerator(**datagen_args)
+    image_datagen = tf.keras.preprocessing.image.ImageDataGenerator(**datagen_args, featurewise_center=do_featurewise_normalization, featurewise_std_normalization=do_featurewise_normalization)
     label_datagen = tf.keras.preprocessing.image.ImageDataGenerator(**datagen_args)
 
     # Compute quantities required for featurewise normalization (std, mean, and principal components if ZCA whitening is applied)

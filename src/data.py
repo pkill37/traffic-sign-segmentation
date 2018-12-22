@@ -3,6 +3,7 @@ import numpy as np
 import os
 import glob
 import matplotlib.pyplot as plt
+import helpers
 
 
 SEED = 2**10
@@ -56,28 +57,28 @@ def training_generator(images_path, labels_path, img_height, img_width, x=None, 
         label_datagen.fit(y, augment=True, seed=SEED)
 
     # Combine generators into one which yields image and masks
-    f = lambda d: os.path.abspath(os.path.join(d, '..')) + '/'
-    image_generator = image_datagen.flow_from_directory(f(images_path), target_size=(img_height, img_width), color_mode='rgb', class_mode=None, batch_size=batch_size, shuffle=True, seed=SEED)
-    label_generator = label_datagen.flow_from_directory(f(labels_path), target_size=(img_height, img_width), color_mode='grayscale', class_mode=None, batch_size=batch_size, shuffle=True, seed=SEED)
+    image_generator = image_datagen.flow_from_directory(helpers.get_parent_path(images_path), target_size=(img_height, img_width), color_mode='rgb', class_mode=None, batch_size=batch_size, shuffle=True, seed=SEED)
+    label_generator = label_datagen.flow_from_directory(helpers.get_parent_path(labels_path), target_size=(img_height, img_width), color_mode='grayscale', class_mode=None, batch_size=batch_size, shuffle=True, seed=SEED)
 
     return zip(image_generator, label_generator)
 
 
 if __name__ == '__main__':
+    plt.ion()
+
     pwd = os.path.realpath(__file__)
     images_path = os.path.abspath(os.path.join(pwd, '../../data/images/all/')) + '/'
     labels_path = os.path.abspath(os.path.join(pwd, '../../data/labels/all/')) + '/'
     img_height = 224
     img_width = 224
-
-    plt.ion()
-    x, y = load_data(images_path, labels_path, img_height, img_width)
     batch_size = 1
-    for x, y in training_generator(images_path=images_path, labels_path=labels_path, img_height=img_height, img_width=img_width, x=x, y=y, batch_size=batch_size):
+    x, y = load_data(images_path, labels_path, img_height, img_width)
+
+    for xb, yb in training_generator(images_path=images_path, labels_path=labels_path, img_height=img_height, img_width=img_width, x=x, y=y, batch_size=batch_size):
         fig, axis = plt.subplots(nrows=batch_size, ncols=2, squeeze=False, subplot_kw={'xticks': [], 'yticks': []})
         for i in range(batch_size):
-            x = (x - np.min(x))/np.ptp(x)
-            axis[i,0].imshow(x[i,:,:,:])
-            axis[i,1].imshow(y[i,:,:,0])
+            xb = (xb - np.min(xb))/np.ptp(xb) # make normalized image somewhat plottable
+            axis[i,0].imshow(xb[i,:,:,:])
+            axis[i,1].imshow(yb[i,:,:,0])
         input('Press [Enter] to visualize another augmentated mini-batch...')
         plt.close()

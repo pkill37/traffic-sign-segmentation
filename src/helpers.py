@@ -1,5 +1,10 @@
+import os
 import matplotlib.pyplot as plt
 import tensorflow as tf
+
+
+def get_parent_path(path):
+    return os.path.abspath(os.path.join(path, '..')) + '/'
 
 
 def plot_metrics(history):

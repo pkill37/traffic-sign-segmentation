@@ -1,8 +1,6 @@
 tensorflow
 matplotlib
 numpy
-scipy
 sklearn
-opencv-python
-imageio
 pydot
+tqdm

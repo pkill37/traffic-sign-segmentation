@@ -46,7 +46,6 @@ if __name__ == '__main__':
     x, y = data.load_data(images_path=args.images_path, labels_path=args.labels_path, img_height=args.img_height, img_width=args.img_width)
     model.fit_generator(
         data.MaskedImageSequence(images_path=args.images_path, labels_path=args.labels_path, img_height=args.img_height, img_width=args.img_width, x=x, y=y, batch_size=args.batch_size),
-        steps_per_epoch=len(x)/args.batch_size,
         epochs=args.epochs,
         verbose=1,
         callbacks=callbacks,

@@ -1,12 +1,11 @@
 import tensorflow as tf
 import numpy as np
 import os
-import glob
 import matplotlib.pyplot as plt
 import helpers
-import tqdm
 import math
 import random
+import re
 
 
 SEED = 2**10
@@ -19,35 +18,39 @@ def load_img(img_path, target_size, color_mode):
     return arr
 
 
-def load_data(images_path, labels_path, img_height, img_width):
-    all_images = [x for x in sorted(os.listdir(images_path)) if x[-4:] == '.png']
-    x = np.empty(shape=(len(all_images), img_height, img_width, 3), dtype='float32')
-    y = np.empty(shape=(len(all_images), img_height, img_width, 1), dtype='float32')
+def list_pictures(directory, ext='jpg|jpeg|bmp|png|ppm'):
+    return [os.path.join(root, f) for root, _, files in os.walk(directory) for f in files if re.match(r'([\w]+\.(?:' + ext + '))', f.lower())]
 
-    for i, name in tqdm.tqdm(enumerate(all_images), total=len(all_images)):
-        assert os.path.isfile(images_path+name) == os.path.isfile(labels_path+name)
-        x[i] = load_img(images_path + name, (img_height, img_width), 'rgb')
-        y[i] = load_img(labels_path + name, (img_height, img_width), 'grayscale')
+
+def load_data(images, labels, img_height, img_width, begin, end):
+    assert len(images) == len(labels)
+
+    begin = max(begin, 0)
+    end = min(end, len(images))
+    assert begin < end
+
+    x = np.array([load_img(image, (img_height, img_width), 'rgb') for image in images[begin:end]], dtype='float32')
+    assert x.shape == (end-begin, img_height, img_width, 3)
+
+    y = np.array([load_img(label, (img_height, img_width), 'grayscale') for label in labels[begin:end]], dtype='float32')
+    assert y.shape == (end-begin, img_height, img_width, 1)
 
     return x, y
 
 
 class MaskedImageSequence(tf.keras.utils.Sequence):
-    def __init__(self, images_path, labels_path, img_height, img_width, batch_size, x=None, y=None, shuffle=True):
-        self.images_path = images_path
-        self.labels_path = labels_path
+    def __init__(self, images_path, labels_path, img_height, img_width, batch_size):
         self.img_height = img_height
         self.img_width = img_width
         self.batch_size = batch_size
-        self.shuffle = shuffle
 
-        self.basenames = [x for x in sorted(os.listdir(images_path)) if x[-4:] == '.png']
+        self.images = list_pictures(images_path)
+        self.labels = list_pictures(labels_path)
 
-        do_featurewise_normalization = x is not None and y is not None
         self.imgaug = tf.keras.preprocessing.image.ImageDataGenerator(
             # Standardization
-            featurewise_center=do_featurewise_normalization,
-            featurewise_std_normalization=do_featurewise_normalization,
+            featurewise_center=True,
+            featurewise_std_normalization=True,
 
             # Allowed transformations
             rotation_range=20,
@@ -65,21 +68,14 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
             preprocessing_function=lambda x: x,
         )
 
-        if do_featurewise_normalization:
-            self.imgaug.fit(x, augment=True, seed=SEED)
+        x, _ = load_data(self.images, self.labels, img_height, img_width, 0, len(self.images))
+        self.imgaug.fit(x, augment=True, seed=SEED)
 
     def __len__(self):
-        return int(math.ceil(len(self.basenames) / float(self.batch_size)))
-
-    def on_epoch_end(self):
-        self.indices = range(len(self.basenames))
-        # Shuffles indices after each epoch
-        if self.shuffle:
-            self.indices = random.sample(self.indices, k=len(self.indices))
+        return int(math.ceil(len(self.images) / float(self.batch_size)))
 
     def __getitem__(self, idx):
-        x = np.array([load_img(self.images_path + basename, (self.img_height, self.img_width), 'rgb') for basename in self.basenames[idx * self.batch_size: (1 + idx) * self.batch_size]])
-        y = np.array([load_img(self.labels_path + basename, (self.img_height, self.img_width), 'grayscale') for basename in self.basenames[idx * self.batch_size: (1 + idx) * self.batch_size]])
+        x, y = load_data(images=self.images, labels=self.labels, img_height=self.img_height, img_width=self.img_width, begin=idx*self.batch_size, end=(1+idx)*self.batch_size)
 
         for i in range(len(x)):
             params = self.imgaug.get_random_transform(x[i].shape)
@@ -89,24 +85,21 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
         return x, y
 
 
-
-
 if __name__ == '__main__':
     plt.ion()
 
     pwd = os.path.realpath(__file__)
-    images_path = os.path.abspath(os.path.join(pwd, '../../data/images/all/')) + '/'
-    labels_path = os.path.abspath(os.path.join(pwd, '../../data/labels/all/')) + '/'
+    images_path = os.path.abspath(os.path.join(pwd, '../../data/images/')) + '/'
+    labels_path = os.path.abspath(os.path.join(pwd, '../../data/labels/')) + '/'
     img_height = 224
     img_width = 224
     batch_size = 1
-    x, y = load_data(images_path, labels_path, img_height, img_width)
 
-    for xb, yb in MaskedImageSequence(images_path=images_path, labels_path=labels_path, img_height=img_height, img_width=img_width, x=x, y=y, batch_size=batch_size):
+    for xb, yb in MaskedImageSequence(images_path=images_path, labels_path=labels_path, img_height=img_height, img_width=img_width, batch_size=batch_size):
         fig, axis = plt.subplots(nrows=batch_size, ncols=2, squeeze=False, subplot_kw={'xticks': [], 'yticks': []})
-        for i in range(batch_size):
+        for i in range(len(xb)):
             xb = (xb - np.min(xb))/np.ptp(xb) # make normalized image somewhat plottable
             axis[i,0].imshow(xb[i,:,:,:])
             axis[i,1].imshow(yb[i,:,:,0])
-        input('Press [Enter] to visualize another augmentated mini-batch...')
+        input('Press [Enter] to visualize another augmented mini-batch...')
         plt.close()

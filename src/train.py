@@ -17,8 +17,8 @@ if __name__ == '__main__':
     parser.add_argument('--log', type=str, default=out_dir+'training_log.csv')
     parser.add_argument('--plots', type=str, default=out_dir+'plots/')
     parser.add_argument('--weights', type=str, default=out_dir+'weights/best.hdf5')
-    parser.add_argument('--images_path', type=str, default=data_dir+'images/all/')
-    parser.add_argument('--labels_path', type=str, default=data_dir+'labels/all/')
+    parser.add_argument('--images_path', type=str, default=data_dir+'images/')
+    parser.add_argument('--labels_path', type=str, default=data_dir+'labels/')
     parser.add_argument('--img_height', type=int, default=224)
     parser.add_argument('--img_width', type=int, default=224)
     parser.add_argument('--epochs', type=int, default=5)
@@ -42,13 +42,12 @@ if __name__ == '__main__':
         tf.keras.callbacks.CSVLogger(filename=args.log, separator=',', append=False),
     ]
 
-    # Fits the model on batches with real-time data augmentation
-    x, y = data.load_data(images_path=args.images_path, labels_path=args.labels_path, img_height=args.img_height, img_width=args.img_width)
     model.fit_generator(
-        data.MaskedImageSequence(images_path=args.images_path, labels_path=args.labels_path, img_height=args.img_height, img_width=args.img_width, x=x, y=y, batch_size=args.batch_size),
+        generator=data.MaskedImageSequence(images_path=args.images_path, labels_path=args.labels_path, img_height=args.img_height, img_width=args.img_width, batch_size=args.batch_size),
         epochs=args.epochs,
         verbose=1,
+        shuffle=True,
         callbacks=callbacks,
-        workers=multiprocessing.cpu_count()-1,
+        workers=multiprocessing.cpu_count()-1 or 1,
         use_multiprocessing=True,
     )

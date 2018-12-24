@@ -58,9 +58,6 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
             height_shift_range=0.1,
             zoom_range=0.2,
 
-            # Allowed percentage of data for validation
-            validation_split=0.2,
-
             # Make sure the values are floats in channels_last order within [0,1]
             dtype='float32',
             rescale=1./255,

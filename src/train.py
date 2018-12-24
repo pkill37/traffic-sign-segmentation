@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--loss', type=str, default='binary_crossentropy')
     args = parser.parse_args()
 
-    model = models.vgg16(output_units=args.img_width*args.img_height, output_activation=args.output_activation)
+    model = models.vgg16(img_height=args.img_height, img_width=args.img_width, output_activation=args.output_activation)
     model.compile(loss=args.loss, optimizer=args.optimizer, metrics=['accuracy'])
     tf.keras.utils.plot_model(model, to_file=args.plots+'model.png', show_shapes=True, show_layer_names=True, rankdir='TB')
 

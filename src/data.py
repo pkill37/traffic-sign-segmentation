@@ -39,10 +39,11 @@ def load_data(images, labels, img_height, img_width, begin, end):
 
 
 class MaskedImageSequence(tf.keras.utils.Sequence):
-    def __init__(self, images_path, labels_path, img_height, img_width, batch_size):
+    def __init__(self, images_path, labels_path, img_height, img_width, batch_size, train=True):
         self.img_height = img_height
         self.img_width = img_width
         self.batch_size = batch_size
+        self.train = train
 
         self.images = list_pictures(images_path)
         self.labels = list_pictures(labels_path)
@@ -62,7 +63,7 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
             dtype='float32',
             rescale=1./255,
             data_format='channels_last',
-            preprocessing_function=lambda x: x,
+            #preprocessing_function=tf.keras.applications.vgg16.preprocess_input,
         )
 
         x, _ = load_data(self.images, self.labels, img_height, img_width, 0, len(self.images))
@@ -74,10 +75,11 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
     def __getitem__(self, idx):
         x, y = load_data(images=self.images, labels=self.labels, img_height=self.img_height, img_width=self.img_width, begin=idx*self.batch_size, end=(1+idx)*self.batch_size)
 
-        for i in range(len(x)):
-            params = self.imgaug.get_random_transform(x[i].shape)
-            x[i] = self.imgaug.apply_transform(self.imgaug.standardize(x[i]), params)
-            y[i] = self.imgaug.apply_transform(y[i], params)
+        if self.train:
+            for i in range(len(x)):
+                params = self.imgaug.get_random_transform(x[i].shape)
+                x[i] = self.imgaug.apply_transform(self.imgaug.standardize(x[i]), params)
+                y[i] = self.imgaug.apply_transform(y[i], params)
 
         return x, y
 
@@ -92,11 +94,10 @@ if __name__ == '__main__':
     img_width = 224
     batch_size = 1
 
-    for xb, yb in MaskedImageSequence(images_path=images_path, labels_path=labels_path, img_height=img_height, img_width=img_width, batch_size=batch_size):
-        fig, axis = plt.subplots(nrows=batch_size, ncols=2, squeeze=False, subplot_kw={'xticks': [], 'yticks': []})
+    for xb, yb in MaskedImageSequence(images_path=images_path, labels_path=labels_path, img_height=img_height, img_width=img_width, batch_size=batch_size, train=False):
+        xb = (xb - np.min(xb))/np.ptp(xb) # make normalized image somewhat plottable
         for i in range(len(xb)):
-            xb = (xb - np.min(xb))/np.ptp(xb) # make normalized image somewhat plottable
-            axis[i,0].imshow(xb[i,:,:,:])
-            axis[i,1].imshow(yb[i,:,:,0])
+            plt.imshow(xb[i,:,:,:])
+            plt.imshow(yb[i,:,:,0], alpha=0.7)
         input('Press [Enter] to visualize another augmented mini-batch...')
         plt.close()

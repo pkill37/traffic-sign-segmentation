@@ -3,6 +3,15 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 
 
+def seed():
+    from random import seed
+    seed(1)
+    import numpy.random
+    numpy.random.seed(2)
+    from tensorflow import set_random_seed
+    set_random_seed(3)
+
+
 def get_parent_path(path):
     return os.path.abspath(os.path.join(path, '..')) + '/'
 

@@ -4,9 +4,12 @@ import multiprocessing
 import tensorflow as tf
 import models
 import data
+import helpers
 
 
 if __name__ == '__main__':
+    helpers.seed()
+
     pwd = os.path.realpath(__file__)
     out_dir = os.path.abspath(os.path.join(pwd, '../../out/')) + '/'
     data_dir = os.path.abspath(os.path.join(pwd, '../../data/')) + '/'

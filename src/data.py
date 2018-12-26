@@ -1,15 +1,8 @@
 import tensorflow as tf
 import numpy as np
 import os
-import matplotlib.pyplot as plt
-import helpers
 import math
-import random
 import re
-
-
-SEED = 2**10
-#np.random.seed(SEED)
 
 
 def load_img(img_path, target_size, color_mode):
@@ -39,35 +32,31 @@ def load_data(images, labels, img_height, img_width, begin, end):
 
 
 class MaskedImageSequence(tf.keras.utils.Sequence):
-    def __init__(self, images_path, labels_path, img_height, img_width, batch_size, train=True):
+    def __init__(self, images_path, labels_path, img_height, img_width, batch_size, augment=True):
         self.img_height = img_height
         self.img_width = img_width
         self.batch_size = batch_size
-        self.train = train
+        self.augment = augment
 
         self.images = list_pictures(images_path)
         self.labels = list_pictures(labels_path)
 
         self.imgaug = tf.keras.preprocessing.image.ImageDataGenerator(
             # Standardization
-            featurewise_center=True,
-            featurewise_std_normalization=True,
+            preprocessing_function=tf.keras.applications.vgg16.preprocess_input,
+            rescale=None,
+            samplewise_center=False,
+            samplewise_std_normalization=False,
+            featurewise_center=False,
+            featurewise_std_normalization=False,
+            zca_whitening=False,
 
             # Allowed transformations
             rotation_range=20,
             width_shift_range=0.1,
             height_shift_range=0.1,
             zoom_range=0.2,
-
-            # Make sure the values are floats in channels_last order within [0,1]
-            dtype='float32',
-            rescale=1./255,
-            data_format='channels_last',
-            #preprocessing_function=tf.keras.applications.vgg16.preprocess_input,
         )
-
-        x, _ = load_data(self.images, self.labels, img_height, img_width, 0, len(self.images))
-        self.imgaug.fit(x, augment=True, seed=SEED)
 
     def __len__(self):
         return int(math.ceil(len(self.images) / float(self.batch_size)))
@@ -75,29 +64,11 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
     def __getitem__(self, idx):
         x, y = load_data(images=self.images, labels=self.labels, img_height=self.img_height, img_width=self.img_width, begin=idx*self.batch_size, end=(1+idx)*self.batch_size)
 
-        if self.train:
-            for i in range(len(x)):
-                params = self.imgaug.get_random_transform(x[i].shape)
-                x[i] = self.imgaug.apply_transform(self.imgaug.standardize(x[i]), params)
-                y[i] = self.imgaug.apply_transform(y[i], params)
+        for i in range(len(x)):
+            params = self.imgaug.get_random_transform(x[i].shape)
+            x[i] = self.imgaug.standardize(x[i])
+            if self.augment:
+                x[i] = self.imgaug.apply_transform(x[i], params)
+            y[i] = self.imgaug.apply_transform(y[i], params)
 
         return x, y
-
-
-if __name__ == '__main__':
-    plt.ion()
-
-    pwd = os.path.realpath(__file__)
-    images_path = os.path.abspath(os.path.join(pwd, '../../data/images/')) + '/'
-    labels_path = os.path.abspath(os.path.join(pwd, '../../data/labels/')) + '/'
-    img_height = 224
-    img_width = 224
-    batch_size = 1
-
-    for xb, yb in MaskedImageSequence(images_path=images_path, labels_path=labels_path, img_height=img_height, img_width=img_width, batch_size=batch_size, train=False):
-        xb = (xb - np.min(xb))/np.ptp(xb) # make normalized image somewhat plottable
-        for i in range(len(xb)):
-            plt.imshow(xb[i,:,:,:])
-            plt.imshow(yb[i,:,:,0], alpha=0.7)
-        input('Press [Enter] to visualize another augmented mini-batch...')
-        plt.close()

@@ -17,12 +17,6 @@ $ docker run -it -p 6006:6006 -p 8888:8888 -v $(pwd):/tmp -w /tmp -u $(id -u):$(
 
 ## Usage
 
-Visualize the data pipeline:
-
-```
-$ python src/data.py
-```
-
 Train the model:
 
 ```

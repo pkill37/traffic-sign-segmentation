@@ -15,11 +15,17 @@ def list_pictures(directory, ext='jpg|jpeg|bmp|png|ppm'):
     return [os.path.join(root, f) for root, _, files in os.walk(directory) for f in files if re.match(r'([\w]+\.(?:' + ext + '))', f.lower())]
 
 
-def load_data(images, labels, img_height, img_width, begin, end):
+def load_data(images, labels, img_height, img_width, begin=None, end=None):
     assert len(images) == len(labels)
 
-    begin = max(begin, 0)
-    end = min(end, len(images))
+    # Load everything
+    if not begin and not end:
+        begin = 0
+        end = len(images)
+    # Load from the interval [begin, end]
+    else:
+        begin = max(begin, 0)
+        end = min(end, len(images))
     assert begin < end
 
     x = np.array([load_img(image, (img_height, img_width), 'rgb') for image in images[begin:end]], dtype='float32')
@@ -32,11 +38,12 @@ def load_data(images, labels, img_height, img_width, begin, end):
 
 
 class MaskedImageSequence(tf.keras.utils.Sequence):
-    def __init__(self, images_path, labels_path, img_height, img_width, batch_size, augment=True):
+    def __init__(self, images_path, labels_path, img_height, img_width, batch_size, augment=True, seed=None):
         self.img_height = img_height
         self.img_width = img_width
         self.batch_size = batch_size
         self.augment = augment
+        self.seed = seed
 
         self.images = list_pictures(images_path)
         self.labels = list_pictures(labels_path)
@@ -65,7 +72,7 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
         x, y = load_data(images=self.images, labels=self.labels, img_height=self.img_height, img_width=self.img_width, begin=idx*self.batch_size, end=(1+idx)*self.batch_size)
 
         for i in range(len(x)):
-            params = self.imgaug.get_random_transform(x[i].shape)
+            params = self.imgaug.get_random_transform(x[i].shape, self.seed)
             x[i] = self.imgaug.standardize(x[i])
             if self.augment:
                 x[i] = self.imgaug.apply_transform(x[i], params)

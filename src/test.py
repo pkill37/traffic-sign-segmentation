@@ -41,21 +41,26 @@ if __name__ == '__main__':
         falseNegativeCount = 0
         totalCountOfSignPixels = 0
 
+        # values in y_pred
+        uniqueValues = np.unique(y_pred[0,:,:,0].astype(np.uint8))
+        threshold = (min(uniqueValues) + max(uniqueValues)) / 2
+
         for i in range(len(x_batch)):
             # i represents image in batch
             for row in range(224):
                 for column in range(224):
+                    
                     # for sign pixels we take original ones
                     if(y_batch[i,row,column,0] == 255):
                         totalCountOfSignPixels = totalCountOfSignPixels + 1
 
-                    if(y_batch[i,row,column,0] == 255 and y_pred[i,row,column,0] >= 200):
+                    if(y_batch[i,row,column,0] == 255 and y_pred[i,row,column,0].astype(np.uint8) >= threshold):
                         truePositiveCount = truePositiveCount + 1
-
-                    elif(y_batch[i,row,column,0] == 255 and y_pred[i,row,column,0] < 200):
+                   
+                    elif(y_batch[i,row,column,0] == 255 and y_pred[i,row,column,0].astype(np.uint8) < threshold):
                         falseNegativeCount = falseNegativeCount + 1
 
-                    elif(y_batch[i,row,column,0] == 0 and y_pred[i,row,column,0] == 255):
+                    elif(y_batch[i,row,column,0] == 0 and y_pred[i,row,column,0].astype(np.uint8) >= threshold):
                         falsePositiveCount = falsePositiveCount + 1
             
            
@@ -68,20 +73,20 @@ if __name__ == '__main__':
             input('Press [Enter] to predict another mini-batch...')
             plt.close()
 
-        # average for all images
-        sumTruePositives = 0
-        sumFalsePositives = 0
-        sumFalseNegatives = 0
-        totalImages = len(truePositives)
+    # average for all images
+    sumTruePositives = 0
+    sumFalsePositives = 0
+    sumFalseNegatives = 0
+    totalImages = len(truePositives)
 
-        for value in range(totalImages):
-            sumTruePositives = sumTruePositives + truePositives[value]
-            sumFalsePositives = sumFalsePositives + falsePositives[value]
-            sumFalseNegatives = sumFalseNegatives + falseNegatives[value]
+    for value in range(totalImages):
+        sumTruePositives = sumTruePositives + truePositives[value]
+        sumFalsePositives = sumFalsePositives + falsePositives[value]
+        sumFalseNegatives = sumFalseNegatives + falseNegatives[value]
 
-        print("average true positive %f\n", sumTruePositives/totalImages * 100)
-        print("average false positive %f\n", sumFalsePositives/totalImages * 100)
-        print("average false negative %f\n", sumFalseNegatives/totalImages * 100)
+    print("average true positive %2.2f\n", sumTruePositives/totalImages * 100)
+    print("average false positive %2.2f\n", sumFalsePositives/totalImages * 100)
+    print("average false negative %2.2f\n", sumFalseNegatives/totalImages * 100)
 
 
 

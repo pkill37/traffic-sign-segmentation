@@ -1,4 +1,5 @@
 import os
+import multiprocessing
 import argparse
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -26,25 +27,32 @@ if __name__ == '__main__':
     # Load best trained model
     model = tf.keras.models.load_model(args.model, custom_objects={'dice_coef_loss': helpers.dice_coef_loss, 'dice_coef': helpers.dice_coef})
 
-    # Load test set
-    _, __, ___, ____, x_test, y_test = data.load_split_stratified_data(
-        images=data.list_pictures(args.images_path),
-        labels=data.list_pictures(args.labels_path),
+    # Build test generator
+    _, __, test_generator = data.generators(
+        images_path=args.images_path,
+        labels_path=args.labels_path,
         img_height=args.img_height,
         img_width=args.img_width,
-        split=(0.8, 0.1, 0.1)
+        split=(0.8, 0.1, 0.1),
+        batch_size=args.batch_size,
     )
 
-    # Evaluate model on test set
-    y_pred = model.predict(x_test)
-    dice = tf.keras.backend.get_value(helpers.dice_coef(y_test, y_pred))
-    print(f'Test set Dice coefficient: {dice}')
+    # Evaluate model on test generator
+    results = model.evaluate_generator(
+        generator=test_generator,
+        verbose=1,
+        workers=multiprocessing.cpu_count()-1 or 1,
+        use_multiprocessing=True,
+    )
+    print(f'Soft Dice Loss: {results[0]}')
+    print(f'Dice Coefficient: {results[1]}')
 
     # Visualize the model's predictions
     plt.ion()
-    for x, y in zip(x_test, y_pred):
-        print(x)
-        plt.imshow(x[:,:,:])
-        plt.imshow(y[:,:,0], alpha=0.7)
-        input('Press [Enter] to predict another mini-batch...')
-        plt.close()
+    for x_batch, y_batch in test_generator:
+        y_pred = model.predict_on_batch(x_batch)
+        for i in range(len(x_batch)):
+            plt.imshow(x_batch[i,:,:,:])
+            plt.imshow(y_pred[i,:,:,0], alpha=0.7)
+            input('Press [Enter] to predict another mini-batch...')
+            plt.close()

@@ -51,21 +51,22 @@ if __name__ == '__main__':
         tf.keras.callbacks.CSVLogger(filename=args.log, separator=',', append=False),
     ]
 
-    x_train, y_train, x_validation, y_validation, _, __ = data.load_split_stratified_data(
-        images=data.list_pictures(args.images_path),
-        labels=data.list_pictures(args.labels_path),
+    train_generator, validation_generator, _ = data.generators(
+        images_path=args.images_path,
+        labels_path=args.labels_path,
         img_height=args.img_height,
         img_width=args.img_width,
-        split=(0.8, 0.1, 0.1)
+        split=(0.8, 0.1, 0.1),
+        batch_size=args.batch_size,
     )
 
-    model.fit(
-        x=x_train,
-        y=y_train,
-        batch_size=args.batch_size,
+    model.fit_generator(
+        generator=train_generator,
         epochs=args.epochs,
-        validation_data=(x_validation, y_validation),
+        validation_data=validation_generator,
         shuffle=True,
         verbose=1,
         callbacks=callbacks,
+        workers=multiprocessing.cpu_count()-1 or 1,
+        use_multiprocessing=True,
     )

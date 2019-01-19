@@ -37,10 +37,10 @@ def load_data(images, labels, img_height, img_width, begin=None, end=None):
     return x, y
 
 
-def load_split_stratified_data(images, labels, img_height, img_width, split):
+def load_split_stratified_data(images_filenames, labels_filenames, img_height, img_width, split):
     # Organize images and labels by their category encoded in the filename
     data = {}
-    for (image, label) in zip(images, labels):
+    for (image, label) in zip(images_filenames, labels_filenames):
         category = os.path.basename(image).split('.')[0].rstrip('0123456789')
         data[category] = data.get(category, []) + [(image, label)]
 
@@ -90,15 +90,15 @@ def load_split_stratified_data(images, labels, img_height, img_width, split):
 
 
 class MaskedImageSequence(tf.keras.utils.Sequence):
-    def __init__(self, images_path, labels_path, img_height, img_width, batch_size, augment=True, seed=None):
+    def __init__(self, x, y, img_height, img_width, batch_size, augment=True, seed=None):
+        self.x = x
+        self.y = y
+
         self.img_height = img_height
         self.img_width = img_width
         self.batch_size = batch_size
         self.augment = augment
         self.seed = seed
-
-        self.images = list_pictures(images_path)
-        self.labels = list_pictures(labels_path)
 
         self.imgaug = tf.keras.preprocessing.image.ImageDataGenerator(
             # Standardization
@@ -118,10 +118,11 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
         )
 
     def __len__(self):
-        return int(math.ceil(len(self.images) / float(self.batch_size)))
+        return int(math.ceil(len(self.x) / float(self.batch_size)))
 
     def __getitem__(self, idx):
-        x, y = load_data(images=self.images, labels=self.labels, img_height=self.img_height, img_width=self.img_width, begin=idx*self.batch_size, end=(1+idx)*self.batch_size)
+        x = self.x[idx*self.batch_size : (1+idx)*self.batch_size]
+        y = self.y[idx*self.batch_size : (1+idx)*self.batch_size]
 
         for i in range(len(x)):
             params = self.imgaug.get_random_transform(x[i].shape, self.seed)
@@ -131,3 +132,18 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
                 y[i] = self.imgaug.apply_transform(y[i], params)
 
         return x, y
+
+def generators(images_path, labels_path, img_height, img_width, split, batch_size):
+    x_train, y_train, x_validation, y_validation, x_test, y_test = load_split_stratified_data(
+        images_filenames=list_pictures(images_path),
+        labels_filenames=list_pictures(labels_path),
+        img_height=img_height,
+        img_width=img_width,
+        split=split,
+    )
+
+    train_generator = MaskedImageSequence(x=x_train, y=y_train, img_height=img_height, img_width=img_width, batch_size=batch_size, augment=True)
+    validation_generator = MaskedImageSequence(x=x_validation, y=y_validation, img_height=img_height, img_width=img_width, batch_size=batch_size, augment=False)
+    test_generator = MaskedImageSequence(x=x_test, y=y_test, img_height=img_height, img_width=img_width, batch_size=batch_size, augment=False)
+
+    return train_generator, validation_generator, test_generator

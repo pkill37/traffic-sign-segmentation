@@ -23,10 +23,10 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=1)
     args = parser.parse_args()
 
-    model = tf.keras.models.load_model(args.model)
+    # Load best trained model
+    model = tf.keras.models.load_model(args.model, custom_objects={'dice_coef_loss': helpers.dice_coef_loss, 'dice_coef': helpers.dice_coef})
 
-    plt.ion()
-
+    # Load test set
     _, __, ___, ____, x_test, y_test = data.load_split_stratified_data(
         images=data.list_pictures(args.images_path),
         labels=data.list_pictures(args.labels_path),
@@ -35,12 +35,16 @@ if __name__ == '__main__':
         split=(0.8, 0.1, 0.1)
     )
 
-    for x_batch, y_batch in zip(x_test, y_test):
-        y_pred = model.predict_on_batch(x_batch)
-        y_pred = (y_pred > 0.5).astype(np.uint8) # threshold activations
+    # Evaluate model on test set
+    y_pred = model.predict(x_test)
+    dice = tf.keras.backend.get_value(helpers.dice_coef(y_test, y_pred))
+    print(f'Test set Dice coefficient: {dice}')
 
-        for i in range(len(x_batch)):
-            plt.imshow(x_batch[i,:,:,:])
-            plt.imshow(y_pred[i,:,:,0], alpha=0.7)
-            input('Press [Enter] to predict another mini-batch...')
-            plt.close()
+    # Visualize the model's predictions
+    plt.ion()
+    for x, y in zip(x_test, y_pred):
+        print(x)
+        plt.imshow(x[:,:,:])
+        plt.imshow(y[:,:,0], alpha=0.7)
+        input('Press [Enter] to predict another mini-batch...')
+        plt.close()

@@ -28,17 +28,25 @@ if __name__ == '__main__':
     parser.add_argument('--optimizer', type=str, default='adam')
     parser.add_argument('--output_activation', type=str, default='relu')
     parser.add_argument('--learning_rate', type=float, default=0.01)
-    parser.add_argument('--loss', type=str, default='binary_crossentropy')
+    parser.add_argument('--loss', type=str, default='dice_coef_loss')
+    parser.add_argument('--metrics', type=str, default='dice_coef')
     args = parser.parse_args()
 
-    model = models.vgg16(img_height=args.img_height, img_width=args.img_width, output_activation=args.output_activation, loss=args.loss, optimizer=args.optimizer)
+    model = models.vgg16(
+        img_height=args.img_height,
+        img_width=args.img_width,
+        output_activation=args.output_activation,
+        loss=helpers.dice_coef_loss if args.loss == 'dice_coef_loss' else args.loss,
+        metrics=[helpers.dice_coef if m == 'dice_coef' else m for m in args.metrics.split(',')],
+        optimizer=args.optimizer,
+    )
     model.summary()
 
     callbacks = [
-        tf.keras.callbacks.EarlyStopping(monitor='val_acc', min_delta=0, patience=0, verbose=0, mode='auto', baseline=None),
+        tf.keras.callbacks.EarlyStopping(monitor='val_dice_coef', min_delta=0, patience=0, verbose=0, mode='auto', baseline=None),
         tf.keras.callbacks.LearningRateScheduler(lambda epoch: args.learning_rate*(0.1**int(epoch/10))),
-        tf.keras.callbacks.ReduceLROnPlateau(monitor='val_acc', factor=0.2, patience=10, verbose=0, mode='auto', min_delta=0.0001, cooldown=0, min_lr=0.001),
-        tf.keras.callbacks.ModelCheckpoint(filepath=args.model, monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1),
+        tf.keras.callbacks.ReduceLROnPlateau(monitor='val_dice_coef', factor=0.2, patience=10, verbose=0, mode='auto', min_delta=0.0001, cooldown=0, min_lr=0.001),
+        tf.keras.callbacks.ModelCheckpoint(filepath=args.model, monitor='val_dice_coef', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1),
         tf.keras.callbacks.TensorBoard(log_dir=args.tensorboard, histogram_freq=0, write_graph=True, write_images=True),
         tf.keras.callbacks.CSVLogger(filename=args.log, separator=',', append=False),
     ]

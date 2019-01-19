@@ -43,14 +43,20 @@ if __name__ == '__main__':
         tf.keras.callbacks.CSVLogger(filename=args.log, separator=',', append=False),
     ]
 
-    x, y = data.load_data(images=data.list_pictures(args.images_path), labels=data.list_pictures(args.labels_path), img_height=args.img_height, img_width=args.img_width)
+    x_train, y_train, x_validation, y_validation, _, __ = data.load_split_stratified_data(
+        images=data.list_pictures(args.images_path),
+        labels=data.list_pictures(args.labels_path),
+        img_height=args.img_height,
+        img_width=args.img_width,
+        split=(0.8, 0.1, 0.1)
+    )
 
     model.fit(
-        x=x,
-        y=y,
+        x=x_train,
+        y=y_train,
         batch_size=args.batch_size,
         epochs=args.epochs,
-        validation_split=0.2,
+        validation_data=(x_validation, y_validation),
         shuffle=True,
         verbose=1,
         callbacks=callbacks,

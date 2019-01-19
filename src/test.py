@@ -27,9 +27,17 @@ if __name__ == '__main__':
 
     plt.ion()
 
-    for x_batch, y_batch in data.MaskedImageSequence(images_path=args.images_path, labels_path=args.labels_path, img_height=args.img_height, img_width=args.img_width, batch_size=args.batch_size, augment=False):
+    _, __, ___, ____, x_test, y_test = data.load_split_stratified_data(
+        images=data.list_pictures(args.images_path),
+        labels=data.list_pictures(args.labels_path),
+        img_height=args.img_height,
+        img_width=args.img_width,
+        split=(0.8, 0.1, 0.1)
+    )
+
+    for x_batch, y_batch in zip(x_test, y_test):
         y_pred = model.predict_on_batch(x_batch)
-        #y_pred = (y_pred > 0.5).astype(np.uint8)
+        y_pred = (y_pred > 0.5).astype(np.uint8) # threshold activations
 
         for i in range(len(x_batch)):
             plt.imshow(x_batch[i,:,:,:])

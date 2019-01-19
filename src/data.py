@@ -37,6 +37,58 @@ def load_data(images, labels, img_height, img_width, begin=None, end=None):
     return x, y
 
 
+def load_split_stratified_data(images, labels, img_height, img_width, split):
+    # Organize images and labels by their category encoded in the filename
+    data = {}
+    for (image, label) in zip(images, labels):
+        category = os.path.basename(image).split('.')[0].rstrip('0123456789')
+        data[category] = data.get(category, []) + [(image, label)]
+
+    train = []
+    validation = []
+    test = []
+    for category in data.keys():
+        # Shuffle data (deterministically if seed has been set)
+        data[category].sort()
+        np.random.shuffle(data[category])
+
+        # Repeat until all leftovers are split as well
+        while len(data[category]) > 0:
+            # Favor train dataset in edge case
+            if len(data[category]) == 1:
+                train += [data[category].pop()]
+                break
+
+            # Compute indices from percentual splits
+            split_train = int(split[0] * len(data[category]))
+            split_validation = split_train + int(split[1] * len(data[category]))
+            split_test = split_validation + int(split[2] * len(data[category]))
+
+            # Add samples to train, validation and test sets
+            train += data[category][:split_train]
+            validation += data[category][split_train:split_validation]
+            test += data[category][split_validation:split_test]
+
+            # Delete taken samples so that indices are correctly calculated in the next potential iteration
+            data[category][split_validation:split_test] = []
+            data[category][split_train:split_validation] = []
+            data[category][:split_train] = []
+
+    def split_x_y(s):
+        return list(map(lambda e: e[0], s)), list(map(lambda e: e[1], s))
+
+    x_train, y_train = split_x_y(train)
+    x_train, y_train = load_data(x_train, y_train, img_height, img_width)
+
+    x_validation, y_validation = split_x_y(validation)
+    x_validation, y_validation = load_data(x_validation, y_validation, img_height, img_width)
+
+    x_test, y_test = split_x_y(test)
+    x_test, y_test = load_data(x_test, y_test, img_height, img_width)
+
+    return x_train, y_train, x_validation, y_validation, x_test, y_test
+
+
 class MaskedImageSequence(tf.keras.utils.Sequence):
     def __init__(self, images_path, labels_path, img_height, img_width, batch_size, augment=True, seed=None):
         self.img_height = img_height

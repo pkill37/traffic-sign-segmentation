@@ -128,6 +128,6 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
             x[i] = self.imgaug.standardize(x[i])
             if self.augment:
                 x[i] = self.imgaug.apply_transform(x[i], params)
-            y[i] = self.imgaug.apply_transform(y[i], params)
+                y[i] = self.imgaug.apply_transform(y[i], params)
 
         return x, y

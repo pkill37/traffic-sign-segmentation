@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
         # values in y_pred
         uniqueValues = np.unique(y_pred[0,:,:,0].astype(np.uint8))
-        threshold = (min(uniqueValues) + max(uniqueValues)) / 2
+        threshold = round((min(uniqueValues) + max(uniqueValues)) * 0.4)
 
         for i in range(len(x_batch)):
             # i represents image in batch

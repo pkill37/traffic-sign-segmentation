@@ -72,6 +72,10 @@ if __name__ == '__main__':
             plt.imshow(y_pred[i,:,:,0], alpha=0.7)
             input('Press [Enter] to predict another mini-batch...')
             plt.close()
+            
+
+        if(len(truePositives)>=197):
+            break
 
     # average for all images
     sumTruePositives = 0
@@ -84,9 +88,9 @@ if __name__ == '__main__':
         sumFalsePositives = sumFalsePositives + falsePositives[value]
         sumFalseNegatives = sumFalseNegatives + falseNegatives[value]
 
-    print("average true positive %2.2f\n", sumTruePositives/totalImages * 100)
-    print("average false positive %2.2f\n", sumFalsePositives/totalImages * 100)
-    print("average false negative %2.2f\n", sumFalseNegatives/totalImages * 100)
+    print("average true positive\n", sumTruePositives/totalImages * 100)
+    print("average false positive\n", sumFalsePositives/totalImages * 100)
+    print("average false negative\n", sumFalseNegatives/totalImages * 100)
 
 
 

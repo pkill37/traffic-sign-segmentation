@@ -142,7 +142,7 @@ def generators(images_path, labels_path, img_height, img_width, split, batch_siz
         split=split,
     )
 
-    train_generator = MaskedImageSequence(x=x_train, y=y_train, img_height=img_height, img_width=img_width, batch_size=batch_size, augment=True)
+    train_generator = MaskedImageSequence(x=x_train, y=y_train, img_height=img_height, img_width=img_width, batch_size=batch_size, augment=False)
     validation_generator = MaskedImageSequence(x=x_validation, y=y_validation, img_height=img_height, img_width=img_width, batch_size=batch_size, augment=False)
     test_generator = MaskedImageSequence(x=x_test, y=y_test, img_height=img_height, img_width=img_width, batch_size=batch_size, augment=False)
 

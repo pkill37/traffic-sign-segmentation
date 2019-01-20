@@ -23,6 +23,12 @@ Train the model:
 $ python src/train.py
 ```
 
+Monitor training:
+
+```
+$ rm -f ./out/tensorboard/* && tensorboard --logdir ./out/tensorboard
+```
+
 Evaluate the model:
 
 ```

@@ -90,7 +90,7 @@ def load_split_stratified_data(images_filenames, labels_filenames, img_height, i
 
 
 class MaskedImageSequence(tf.keras.utils.Sequence):
-    def __init__(self, x, y, img_height, img_width, batch_size, augment=True, seed=None):
+    def __init__(self, x, y, img_height, img_width, batch_size, augment, augmentation_factor=1, seed=None):
         self.x = x
         self.y = y
 
@@ -98,6 +98,7 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
         self.img_width = img_width
         self.batch_size = batch_size
         self.augment = augment
+        self.augmentation_factor = augmentation_factor if augment else 1
         self.seed = seed
 
         self.imgaug = tf.keras.preprocessing.image.ImageDataGenerator(
@@ -118,20 +119,27 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
         )
 
     def __len__(self):
-        return int(math.ceil(len(self.x) / float(self.batch_size)))
+        return int(math.ceil(len(self.x) / float(self.batch_size))) * self.augmentation_factor
 
     def __getitem__(self, idx):
-        x = self.x[idx*self.batch_size : (1+idx)*self.batch_size]
-        y = self.y[idx*self.batch_size : (1+idx)*self.batch_size]
+        # Check if we are batching the original or augmented data
+        augmenting = False
+        if idx >= len(self)/self.augmentation_factor:
+            augmenting = True if self.augment else False
+            idx = int(idx % (len(self)//self.augmentation_factor))
+        x_batch = self.x[idx*self.batch_size : (1+idx)*self.batch_size]
+        y_batch = self.y[idx*self.batch_size : (1+idx)*self.batch_size]
 
-        for i in range(len(x)):
-            x[i] = self.imgaug.standardize(x[i])
-            if self.augment:
-                params = self.imgaug.get_random_transform(x[i].shape, self.seed)
-                x[i] = self.imgaug.apply_transform(x[i], params)
-                y[i] = self.imgaug.apply_transform(y[i], params)
+        # Standardize and augment batch
+        for i in range(len(x_batch)):
+            x_batch[i] = self.imgaug.standardize(x_batch[i])
+            if augmenting:
+                params = self.imgaug.get_random_transform(x_batch[i].shape, self.seed)
+                x_batch[i] = self.imgaug.apply_transform(x_batch[i], params)
+                y_batch[i] = self.imgaug.apply_transform(y_batch[i], params)
 
-        return x, y
+        return x_batch, y_batch
+
 
 def generators(images_path, labels_path, img_height, img_width, split, batch_size):
     x_train, y_train, x_validation, y_validation, x_test, y_test = load_split_stratified_data(

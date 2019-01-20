@@ -125,9 +125,9 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
         y = self.y[idx*self.batch_size : (1+idx)*self.batch_size]
 
         for i in range(len(x)):
-            params = self.imgaug.get_random_transform(x[i].shape, self.seed)
             x[i] = self.imgaug.standardize(x[i])
             if self.augment:
+                params = self.imgaug.get_random_transform(x[i].shape, self.seed)
                 x[i] = self.imgaug.apply_transform(x[i], params)
                 y[i] = self.imgaug.apply_transform(y[i], params)
 

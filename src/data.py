@@ -139,7 +139,8 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
         return x_batch, y_batch
 
 
-def generators(images_path, labels_path, img_height, img_width, split, batch_size):
+def generators(images_path, labels_path, img_height, img_width, split, batch_size, augmentation):
+    print('augmentation', augmentation)
     x_train, y_train, x_validation, y_validation, x_test, y_test = load_split_stratified_data(
         images_filenames=list_pictures(images_path),
         labels_filenames=list_pictures(labels_path),
@@ -148,7 +149,7 @@ def generators(images_path, labels_path, img_height, img_width, split, batch_siz
         split=split,
     )
 
-    train_generator = MaskedImageSequence(x=x_train, y=y_train, img_height=img_height, img_width=img_width, batch_size=batch_size, augment=True)
+    train_generator = MaskedImageSequence(x=x_train, y=y_train, img_height=img_height, img_width=img_width, batch_size=batch_size, augment=augmentation)
     validation_generator = MaskedImageSequence(x=x_validation, y=y_validation, img_height=img_height, img_width=img_width, batch_size=batch_size, augment=False)
     test_generator = MaskedImageSequence(x=x_test, y=y_test, img_height=img_height, img_width=img_width, batch_size=batch_size, augment=False)
 

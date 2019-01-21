@@ -30,6 +30,8 @@ if __name__ == '__main__':
     parser.add_argument('--learning_rate', type=float, default=0.01)
     parser.add_argument('--loss', type=str, default='dice_coef_loss')
     parser.add_argument('--metrics', type=str, default='dice_coef')
+    parser.add_argument('--dropout', type=float, default=0.5)
+    parser.add_argument('--no_augmentation', default=False, action='store_true')
     args = parser.parse_args()
 
     model = models.vgg16(
@@ -39,6 +41,7 @@ if __name__ == '__main__':
         loss=helpers.dice_coef_loss if args.loss == 'dice_coef_loss' else args.loss,
         metrics=[helpers.dice_coef if m == 'dice_coef' else m for m in args.metrics.split(',')],
         optimizer=args.optimizer,
+        dropout=args.dropout,
     )
     model.summary()
 
@@ -58,6 +61,7 @@ if __name__ == '__main__':
         img_width=args.img_width,
         split=(0.8, 0.1, 0.1),
         batch_size=args.batch_size,
+        augmentation=not args.no_augmentation,
     )
 
     model.fit_generator(

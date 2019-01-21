@@ -90,7 +90,7 @@ def load_split_stratified_data(images_filenames, labels_filenames, img_height, i
 
 
 class MaskedImageSequence(tf.keras.utils.Sequence):
-    def __init__(self, x, y, img_height, img_width, batch_size, augment, augmentation_factor=1, seed=None):
+    def __init__(self, x, y, img_height, img_width, batch_size, augment, seed=None):
         self.x = x
         self.y = y
 
@@ -98,7 +98,6 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
         self.img_width = img_width
         self.batch_size = batch_size
         self.augment = augment
-        self.augmentation_factor = augmentation_factor if augment else 1
         self.seed = seed
 
         self.imgaug = tf.keras.preprocessing.image.ImageDataGenerator(
@@ -112,28 +111,27 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
             zca_whitening=False,
 
             # Allowed transformations
-            rotation_range=20,
+            horizontal_flip=True,
+            vertical_flip=True,
             width_shift_range=0.1,
             height_shift_range=0.1,
+            brightness_range=(0,1),
+            shear_range=0.5,
             zoom_range=0.2,
+            channel_shift_range=0.005,
         )
 
     def __len__(self):
-        return int(math.ceil(len(self.x) / float(self.batch_size))) * self.augmentation_factor
+        return int(math.ceil(len(self.x) / float(self.batch_size)))
 
     def __getitem__(self, idx):
-        # Check if we are batching the original or augmented data
-        augmenting = False
-        if idx >= len(self)/self.augmentation_factor:
-            augmenting = True if self.augment else False
-            idx = int(idx % (len(self)//self.augmentation_factor))
         x_batch = self.x[idx*self.batch_size : (1+idx)*self.batch_size]
         y_batch = self.y[idx*self.batch_size : (1+idx)*self.batch_size]
 
         # Standardize and augment batch
         for i in range(len(x_batch)):
             x_batch[i] = self.imgaug.standardize(x_batch[i])
-            if augmenting:
+            if self.augment:
                 params = self.imgaug.get_random_transform(x_batch[i].shape, self.seed)
                 x_batch[i] = self.imgaug.apply_transform(x_batch[i], params)
                 y_batch[i] = self.imgaug.apply_transform(y_batch[i], params)
@@ -150,7 +148,7 @@ def generators(images_path, labels_path, img_height, img_width, split, batch_siz
         split=split,
     )
 
-    train_generator = MaskedImageSequence(x=x_train, y=y_train, img_height=img_height, img_width=img_width, batch_size=batch_size, augment=False)
+    train_generator = MaskedImageSequence(x=x_train, y=y_train, img_height=img_height, img_width=img_width, batch_size=batch_size, augment=True)
     validation_generator = MaskedImageSequence(x=x_validation, y=y_validation, img_height=img_height, img_width=img_width, batch_size=batch_size, augment=False)
     test_generator = MaskedImageSequence(x=x_test, y=y_test, img_height=img_height, img_width=img_width, batch_size=batch_size, augment=False)
 

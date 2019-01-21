@@ -43,10 +43,10 @@ if __name__ == '__main__':
     model.summary()
 
     callbacks = [
-        tf.keras.callbacks.EarlyStopping(monitor='val_dice_coef', min_delta=0, patience=0, verbose=0, mode='auto', baseline=None),
+        tf.keras.callbacks.EarlyStopping(monitor='val_dice_coef', min_delta=0, patience=0, verbose=0, mode='max', baseline=None),
         tf.keras.callbacks.LearningRateScheduler(lambda epoch: args.learning_rate*(0.1**int(epoch/10))),
-        tf.keras.callbacks.ReduceLROnPlateau(monitor='val_dice_coef', factor=0.2, patience=10, verbose=0, mode='auto', min_delta=0.0001, cooldown=0, min_lr=0.001),
-        tf.keras.callbacks.ModelCheckpoint(filepath=args.model, monitor='val_dice_coef', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1),
+        tf.keras.callbacks.ReduceLROnPlateau(monitor='val_dice_coef', factor=0.2, patience=10, verbose=0, mode='max', min_delta=0.0001, cooldown=0, min_lr=0.001),
+        tf.keras.callbacks.ModelCheckpoint(filepath=args.model, monitor='val_dice_coef', verbose=1, save_best_only=True, save_weights_only=False, mode='max', period=1),
         tf.keras.callbacks.TensorBoard(log_dir=args.tensorboard, histogram_freq=0, write_graph=True, write_images=True),
         tf.keras.callbacks.CSVLogger(filename=args.log, separator=',', append=False),
     ]

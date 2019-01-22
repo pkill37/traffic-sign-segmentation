@@ -111,11 +111,9 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
             zca_whitening=False,
 
             # Allowed transformations
-            horizontal_flip=True,
-            vertical_flip=True,
             width_shift_range=0.1,
             height_shift_range=0.1,
-            brightness_range=(0,1),
+            horizontal_flip=True,
             shear_range=0.5,
             zoom_range=0.2,
             channel_shift_range=0.005,
@@ -140,7 +138,6 @@ class MaskedImageSequence(tf.keras.utils.Sequence):
 
 
 def generators(images_path, labels_path, img_height, img_width, split, batch_size, augmentation):
-    print('augmentation', augmentation)
     x_train, y_train, x_validation, y_validation, x_test, y_test = load_split_stratified_data(
         images_filenames=list_pictures(images_path),
         labels_filenames=list_pictures(labels_path),

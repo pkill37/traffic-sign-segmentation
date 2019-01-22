@@ -35,6 +35,7 @@ if __name__ == '__main__':
         img_width=args.img_width,
         split=(0.8, 0.1, 0.1),
         batch_size=args.batch_size,
+        augmentation=True,
     )
 
     # Evaluate model on test generator
